@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deposition Logger</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    #recordButton {
+      font-size: 24px;
+      padding: 30px;
+      width: 90%;
+      max-width: 400px;
+      background-color: green;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      margin: 20px auto;
+      display: block;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin: 10px 0;
+      text-align: left;
+    }
+    #exportButton {
+      margin-top: 20px;
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+    }
+    #totalTime {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Deposition Logger</h1>
+
+  <button id="recordButton" onclick="toggleRecording()">Start Record</button>
+
+  <ul id="logList"></ul>
+
+  <div id="totalTime">Total Time: 00:00:00</div>
+
+  <button id="exportButton" onclick="exportLog()">Export Log</button>
+
+  <script>
+    let isRecording = false;
+    let log = [];
+    let timePairs = [];
+    let startTime = null;
+
+    function toggleRecording() {
+      const now = new Date();
+      const timestamp = now.toLocaleString();
+      
+      if (!isRecording) {
+        startTime = now;
+        log.push("Started Recording: " + timestamp);
+        document.getElementById("recordButton").textContent = "Stop Record";
+        document.getElementById("recordButton").style.backgroundColor = "red";
+      } else {
+        const stopTime = now;
+        log.push("Stopped Recording: " + timestamp);
+        if (startTime) {
+          timePairs.push([startTime, stopTime]);
+        }
+        startTime = null;
+        updateTotalTime();
+        document.getElementById("recordButton").textContent = "Start Record";
+        document.getElementById("recordButton").style.backgroundColor = "green";
+      }
+
+      isRecording = !isRecording;
+      updateLogList();
+    }
+
+    function updateLogList() {
+      const logList = document.getElementById("logList");
+      logList.innerHTML = '';
+      log.slice().reverse().forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = entry;
+        logList.appendChild(li);
+      });
+    }
+
+    function updateTotalTime() {
+      let totalMilliseconds = 0;
+      timePairs.forEach(pair => {
+        totalMilliseconds += pair[1] - pair[0];
+      });
+
+      const totalSeconds = Math.floor(totalMilliseconds / 1000);
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
+
+      document.getElementById("totalTime").textContent = `Total Time: ${hours}:${minutes}:${seconds}`;
+    }
+
+    function exportLog() {
+      const totalSeconds = Math.floor(timePairs.reduce((sum, [start, stop]) => sum + (stop - start), 0) / 1000);
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
+      const totalTimeStr = `\n\nTotal Time: ${hours}:${minutes}:${seconds}`;
+
+      const body = encodeURIComponent(log.join('\n') + totalTimeStr);
+      window.location.href = "mailto:?subject=Deposition Log&body=" + body;
+    }
+  </script>
+
+</body>
+</html>
